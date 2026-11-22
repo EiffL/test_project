@@ -1,8 +1,12 @@
 [project]
-name = "mynewproj"
+name = "mynewanalysis"
 version = "0.0.1"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "matplotlib>=3.11.2",
+    "numpy>=2.5.5",
+    "scipy>=1.18.1",
+]
 
 [tool.uv]
 required-version = ">=0.7"
