@@ -1,0 +1,30 @@
+{
+  "address": "om_posterior_figure#baseline",
+  "content_hash": "sha256:ff8f2114b189c6d60cc43b14916113c8a57ae3f38b1bb6956d070e906375b884",
+  "generated_by": {
+    "commit": "c9aa52c4144ad1495634631e1bcae846aff74d19",
+    "environment": {
+      "iri": "urn:lightcone:env:sha256:466f8b3353c2991bcb63d0f9a08cf37379e84e483d54c27d28ef89fb6dda18d5"
+    },
+    "finished": "2026-11-22T11:48:01.248Z",
+    "inputs": [
+      {
+        "content_hash": "sha256:436c3685396c759da397b5afed59caa57e3d4d77b3ad80492530c4eb34ec913f",
+        "entry": "om_posterior",
+        "size": 190365
+      },
+      {
+        "content_hash": "sha256:9aabaab98ad04b5eb15f3016108abb5e51da8fa7db8f6983ace86f7c83f4f4b4",
+        "entry": "om_constraint",
+        "size": 429
+      }
+    ],
+    "runner": {
+      "id": "lightcone-cli",
+      "version": "0.6.0rc1"
+    },
+    "started": "2026-11-22T11:47:56.837Z"
+  },
+  "size": 70628,
+  "spec_version": "0.1.0"
+}
