@@ -1,0 +1,30 @@
+{
+  "address": "hubble_diagram#stat_only",
+  "content_hash": "sha256:92484223b54967ceace940c1f8d8d5b6874a8f4c6e1c70a9de6fdad078ed0280",
+  "generated_by": {
+    "commit": "c9aa52c4144ad1495634631e1bcae846aff74d19",
+    "environment": {
+      "iri": "urn:lightcone:env:sha256:466f8b3353c2991bcb63d0f9a08cf37379e84e483d54c27d28ef89fb6dda18d5"
+    },
+    "finished": "2026-11-22T11:48:01.293Z",
+    "inputs": [
+      {
+        "content_hash": "sha256:98fc24a6eef71ebd0c90e25b69271c0a3a8ffe23e7e3c2fada37b9334b1101eb",
+        "entry": "union21_mu_z",
+        "size": 33899
+      },
+      {
+        "content_hash": "sha256:d53451b1026e616745b1d72c23092514feb2b2cef02f2e0207953fb691b3cdd4",
+        "entry": "om_constraint",
+        "size": 424
+      }
+    ],
+    "runner": {
+      "id": "lightcone-cli",
+      "version": "0.6.0rc1"
+    },
+    "started": "2026-11-22T11:47:57.002Z"
+  },
+  "size": 180668,
+  "spec_version": "0.1.0"
+}
