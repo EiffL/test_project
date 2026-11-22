@@ -1,4 +1,204 @@
 # ASTRA Analysis Specification
 
 spec_version: "0.1.0"
-label: "mynewproj"
+label: "Union2.1 SN Ia Hubble diagram: flat ΛCDM fit of Ωm"
+tags: [cosmology, supernovae, union2.1, reproduction]
+description: >-
+  Reproduces the SN-only flat ΛCDM constraint on Ωm from the Union2.1
+  compilation (Suzuki et al. 2012, 10.1088/0004-637X/746/1/85). The 580
+  published distance moduli are compared with μ(z; Ωm) in a Gaussian
+  likelihood built from one of the released error models. The SN absolute
+  magnitude and H0 combine into a single additive offset, so the fit
+  constrains Ωm but not H0. `om_posterior` holds the grid posterior,
+  `om_constraint` summarizes it into the headline number, and two figures
+  show the Hubble diagram and the posterior.
+
+universes:
+  baseline:
+    label: Suzuki+2012 headline setup
+    description: >-
+      Full statistical + systematic covariance, M/H0 offset marginalized,
+      best fit with Δχ² = 1 bounds, as in Suzuki et al. (2012) Table 7.
+    decisions:
+      covariance: stat_sys
+      offset_treatment: marginalized
+      interval_estimator: best_fit_dchi2
+  stat_only:
+    label: Statistical errors only
+    description: >-
+      As baseline, but with the statistical-only covariance: the second
+      SN-only flat ΛCDM number of Suzuki et al. (2012) Table 7.
+    derived_from: baseline
+    decisions:
+      covariance: stat
+
+inputs:
+  union21_mu_z:
+    label: Union2.1 Hubble diagram table
+    description: >-
+      SCPUnion2.1_mu_vs_z.txt from the Supernova Cosmology Project
+      (https://supernova.lbl.gov/Union/figures/). 580 SNe Ia, one row each:
+      name, redshift, distance modulus μ, its uncertainty σμ, and the
+      probability that the host has stellar mass below 10^10 M☉. The μ values
+      are standardized with the Union2.1 best-fit α, β, δ and an absolute
+      magnitude M computed for h = 0.70, which are given in the file header.
+    path: data/SCPUnion2.1_mu_vs_z.txt
+  union21_cov_stat:
+    label: Union2.1 statistical covariance
+    description: >-
+      SCPUnion2.1_covmat_nosys.txt: the 580×580 covariance of μ with
+      statistical errors only, from the same SCP release.
+    path: data/SCPUnion2.1_covmat_nosys.txt
+  union21_cov_sys:
+    label: Union2.1 stat+sys covariance
+    description: >-
+      SCPUnion2.1_covmat_sys.txt: the 580×580 covariance of μ including the
+      Union2.1 systematic-error budget, from the same SCP release.
+    path: data/SCPUnion2.1_covmat_sys.txt
+
+outputs:
+  om_posterior:
+    label: Ωm posterior
+    type: data
+    format: csv
+    description: >-
+      The 1-D posterior of Ωm in flat ΛCDM on a fine grid over a flat prior
+      Ωm ∈ [0, 1]. Columns: Ωm, −2 ln L (or χ²), normalized posterior density,
+      and the best-fit magnitude offset at each grid point. The SN absolute
+      magnitude and H0 enter only as one additive offset in μ, which is
+      treated according to `offset_treatment`.
+    inputs: [union21_mu_z, union21_cov_stat, union21_cov_sys]
+    decisions: [covariance, offset_treatment]
+    recipe:
+      command: >-
+        python src/fit_omega_m.py
+        --mu-z {inputs.union21_mu_z}
+        --cov-stat {inputs.union21_cov_stat}
+        --cov-sys {inputs.union21_cov_sys}
+        --covariance {decisions.covariance}
+        --offset {decisions.offset_treatment}
+        --output {output}
+  om_constraint:
+    label: Ωm constraint
+    type: metric
+    format: json
+    description: >-
+      The headline number: a point estimate of Ωm with its 68% interval,
+      plus χ²_min, degrees of freedom and the best-fit magnitude offset.
+      This is the value compared with Suzuki et al. (2012).
+    inputs: [om_posterior]
+    decisions: [interval_estimator]
+    recipe:
+      command: >-
+        python src/summarize_constraint.py
+        --posterior {inputs.om_posterior}
+        --estimator {decisions.interval_estimator}
+        --output {output}
+  hubble_diagram:
+    label: Hubble diagram
+    type: figure
+    format: png
+    description: >-
+      μ against z for the 580 Union2.1 SNe with σμ error bars, the best-fit
+      flat ΛCDM curve overlaid, and a residual panel (data − model).
+    inputs: [union21_mu_z, om_constraint]
+    recipe:
+      command: >-
+        python src/plot_hubble_diagram.py
+        --mu-z {inputs.union21_mu_z}
+        --constraint {inputs.om_constraint}
+        --output {output}
+  om_posterior_figure:
+    label: Ωm posterior figure
+    type: figure
+    format: png
+    description: >-
+      The marginal posterior of Ωm with its 68% interval shaded, and the
+      published Suzuki et al. (2012) Table 7 SN-only flat ΛCDM values (stat
+      and stat+sys) marked for comparison. They are passed as literal
+      constants in the recipe.
+    inputs: [om_posterior, om_constraint]
+    recipe:
+      command: >-
+        python src/plot_om_posterior.py
+        --posterior {inputs.om_posterior}
+        --constraint {inputs.om_constraint}
+        --published-stat 0.277 0.021 0.022
+        --published-sys 0.295 0.040 0.043
+        --output {output}
+  om_universe_comparison:
+    label: Ωm across universes
+    type: figure
+    format: png
+    description: >-
+      Overlays the Ωm posteriors of the `baseline` (stat+sys) and `stat_only`
+      universes, each with its 68% interval shaded and its point estimate
+      dashed. Beside each one is the matching Suzuki et al. (2012) Table 7
+      SN-only flat ΛCDM value, passed as literal constants in the recipe.
+      It reads each universe's result through a pinned reference, so it is
+      built once rather than per universe.
+    inputs:
+      - om_posterior#baseline
+      - om_constraint#baseline
+      - om_posterior#stat_only
+      - om_constraint#stat_only
+    recipe:
+      command: >-
+        python src/plot_universe_comparison.py
+        --universe baseline {inputs.om_posterior#baseline} {inputs.om_constraint#baseline}
+        --universe stat_only {inputs.om_posterior#stat_only} {inputs.om_constraint#stat_only}
+        --published baseline 0.295 0.040 0.043
+        --published stat_only 0.277 0.021 0.022
+        --output {output}
+
+decisions:
+  covariance:
+    label: Distance-modulus error model
+    rationale: >-
+      Union2.1 ships three error models. Suzuki et al. (2012) quote SN-only
+      constraints both with and without systematics, and the choice moves
+      both the central value of Ωm and its uncertainty: Table 7 gives
+      0.277 +0.022/−0.021 (stat) and 0.295 +0.043/−0.040 (stat+sys).
+    options:
+      diagonal:
+        label: Diagonal σμ only
+        description: Uses the σμ column of the table and ignores correlations between SNe.
+        excluded: >-
+          Identical to `stat`: the released covmat_nosys is exactly
+          diag(σμ²), with no off-diagonal terms (checked 2026-11-18).
+      stat:
+        label: Statistical covariance
+        description: The full 580×580 statistical-only covariance (covmat_nosys).
+      stat_sys:
+        label: Statistical + systematic covariance
+        description: The full covariance including the systematic budget (covmat_sys).
+  offset_treatment:
+    label: Treatment of the M/H0 magnitude offset
+    rationale: >-
+      SNe Ia measure only relative distances, so M and H0 combine into one
+      additive offset in μ that is degenerate with H0. The published μ fix it
+      at h = 0.70 with the Union2.1 best-fit M. Fitting cosmology with that
+      offset held fixed versus marginalized changes Ωm.
+    options:
+      marginalized:
+        label: Marginalize over a free offset
+        description: >-
+          Analytic marginalization over a flat prior on the additive offset.
+          This is equivalent to profiling for this Gaussian, linear parameter.
+      fixed_h70:
+        label: Fixed at the published zero point
+        description: Takes μ at face value (h = 0.70, published M), with no free offset.
+  interval_estimator:
+    label: Point estimate and 68% interval
+    rationale: >-
+      Reproducing a published number means matching how it was summarized.
+      For a nearly Gaussian 1-D posterior the two conventions differ only at
+      the few-10⁻³ level, but that is comparable to the precision of the
+      comparison. Suzuki et al. (2012) quote 68% limits as Δχ² = 1.
+    options:
+      posterior_median:
+        label: Posterior median, 16th–84th percentiles
+        description: Bayesian marginal summary over the flat prior on Ωm.
+      best_fit_dchi2:
+        label: Minimum χ², Δχ² = 1 bounds
+        description: Frequentist profile-likelihood summary.
